@@ -1,0 +1,959 @@
+---
+title: "Juice Capstone Project"
+author: "Ravi Singh"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    number_sections: yes
+  pdf_document:
+    number_sections: yes
+    extra_dependencies: flafter
+  html_notebook:
+    df_print: paged
+    number_sections: yes
+  word_document: default
+---
+
+
+# Introduction
+
+In this study we talk about a study on Juice which is done as a part of thstudy for a Data Science Certificate in edx [1]. A topic on “Juice” is selected as the topic of the project and the data set is attached within the GitHub reposority. The dataset is related to juice samples were created mixing random data sets from the internet. The dataset contains a lot of columns for a juice and an associated grade.
+
+[^1]: <https://www.edx.org/professional-certificate/harvardx-data-science>
+
+[^2]: P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. Modeling wine preferences by data mining from physicochemical properties. In Decision Support Systems, Elsevier, 47(4):547-553, 2009. <https://archive.ics.uci.edu/ml/datasets/Wine+Grade>
+
+Juice is a commonly used beverage in every nook and corner of the world. Juice is produced in all sorts of way, preservatives, sugar, naturally are all ingredients used in its production. There can be small additions of acids or sulfates used to control to balance and stabilize the product. "No matter what it costs, most juices are made with water, preservatives and the real fruit juice. The remaining percent is a combination of acids, sugars, volatile flavour and aroma compounds, pigment compounds, etc. Amazingly, it's this 2 per cent that makes all the difference, giving a wine its unique flavour, colour, and aroma. 
+
+The aim of this study is to use the juice dataset to explore the impact of preservatives on juice grade. There are features contained as a small subset within the dataset of a juice which is formed from the balance of sugars, acids, but the character of the juice is provided by the volatile aroma compounds. Thousands of flavors of juices are present throughout the world. They vary by grade and in this study we try to rate them with grade. The study tries to perform an analysis to predict the grade of the juice.  Taking into consideration key components to differentiate based on grade and grade.
+
+The following are the steps performed in this Study:-
+
+1.  Load/Verify Dataset
+
+2.  Understand and Analyze Dataset
+
+3.  Structure the Dataset
+
+4.  Dataset Analysis through methodology 
+
+5.  Predict analysis
+
+    -   Numeric - regression models
+
+    -   Category - classification models
+
+6.  Estimation through the presence of prevalence
+
+7.  Conclusions through model evaluation
+
+8.  Results
+
+Programming and modelling through R code are the most essential step. The codes are present in the R file and also within this body of this Report. All the codes have been used, the codes not seen on the report are seen in the R file and the ones in R would be present in pdf file and all is essential for better data visualization. 
+
+# Data Exploration and Analysis
+
+## Setup
+
+All libraries used are loaded at this step followed by turning off the scientific notation before the programming code can be drafted.
+
+
+```{r setup, include=TRUE, message=FALSE, warning=FALSE, echo=TRUE}
+#set global options for code chunks to no messages or warnings
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	echo = TRUE
+)
+#install packages if needed
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(caret)) install.packages("caret")
+if(!require(knitr)) install.packages("knitr")
+if(!require(kableExtra)) install.packages("kableExtra")
+if(!require(rpart)) install.packages("rpart")
+if(!require(rpart.plot)) install.packages("rpart.plot")
+if(!require(AppliedPredictiveModeling)) install.packages("AppliedPredictiveModeling")
+if(!require(corrplot)) install.packages("corrplot")
+if(!require(randomForest)) install.packages("randomForest")
+if(!require(FactoMineR)) install.packages("FactoMineR")
+if(!require(factoextra)) install.packages("factoextra")
+if(!require(broom)) install.packages("broom")
+if(!require(corrplot)) install.packages("corrplot")
+if(!require(kernlab)) install.packages("kernlab")
+if(!require(mboost)) install.packages("mboost")
+if(!require(import)) install.packages("import")
+if(!require(gam)) install.packages("gam")
+if(!require(kknn)) install.packages("kknn")
+if(!require(Rborist)) install.packages("Rborist")
+if(!require(mgcv)) install.packages("mgcv")
+if(!require(nlme)) install.packages("nlme")
+if(!require(RSNNS)) install.packages("RSNNS")
+detach(package:RSNNS) #package masks key functions from caret package
+#Load the libraries
+library(tidyverse)
+library(caret)
+library(knitr)
+library(kableExtra)
+library(rpart)
+library(rpart.plot)
+library(AppliedPredictiveModeling)
+library(corrplot)
+library(randomForest)
+library(rpart)
+library(FactoMineR)
+library(factoextra)
+library(broom)
+library(corrplot)
+#turn off scientific notation and set number of digits to print
+options(scipen = 999, digits = 5)
+```
+## Load/Verify Dataset
+
+The juice grade dataset is provided as a .csv file, separated with a semicolon. The agenda of the study is only limited to the juice dataset. While loading the dataset, column names are replaced for better understanding, clarity and analysis.
+
+
+```{r read_data}
+# Reading the juice Dataset
+white <- read_delim("juice.csv", delim = ";")
+# Removing unnecessary spaces in the Juice dataset
+colnames(white)<- colnames(white) %>% str_replace_all(" ", "_")
+```
+
+## Understand and Analyze Dataset
+
+Loading the juice data set to make sure its loaded properly and there are not errors or problems within the dataset.
+
+
+```{r data_str}
+#Showcase the data structure
+str(white)
+```
+
+A search for Not Applicable values (NA), shows that there are none present
+
+```{r check_NA}
+#Remove all NA values
+which(is.na(white))
+```
+
+Final view of the entire Juice dataset
+
+```{r data_summary}
+# View the juice dataset
+summary(white)
+```
+
+The juice data set has 12 x 4898 observations and the type of dataset is numeric.
+
+
+Grade ratings for juice are found to be ranged from 4 - 9, with a mean of 5.76, a median of six (6.00).
+
+### Result Verification 
+
+He data set is well structured; it is usable form with no missing values or bad grade grades were detected.
+
+## Create Training and Test model
+
+The training set will be divided into two further sets namely, the training set and the other, the test set. No further analysis would be done in the test dataset.
+The train an test dataset would be used in the classification of models. A categorla version of the grade results would be created on the numeric dataset. A grade based category version would also be created so as to classify models In addition to this split, we will also be creating a test and train data set to use with our classification models. The minimum to maximum value of the grade grade would be converted into factors.
+
+Set of following codes help perform the initial split between the train and test data set. About a certain percentage (20) would be used in the testing process.
+
+
+```{r create_test_and_train}
+# Repeatability set seed
+set.seed(931, sample.kind = "Rounding")
+# Train & Test dataset for Juice
+test_index <- createDataPartition(white$quality, times = 1, p = 0.2, list = FALSE)
+train_rating <- white %>% slice(-test_index)
+test_rating <- white %>% slice(test_index)
+```
+
+Another data set for train and test is created where the grade vales are not numerical but are factors.
+
+```{r create_test_and_train2, echo=TRUE}
+# Second test and train dataset is created
+# The categories are acceptable, good, premium
+# These are the same data sets as the rating sets, but with the quality factor 
+# Changed to a category
+test_category <- test_rating %>%
+  mutate(quality = as.factor(
+    ifelse(quality >=8, "premium",
+           ifelse(quality <= 4, "acceptable", "good") )))
+train_category <- train_rating %>%
+  mutate(quality = as.factor(
+    ifelse(quality >=8, "premium",
+           ifelse(quality <= 4, "acceptable", "good") )))
+test_category <- test_rating %>%
+  mutate(quality = as.factor(quality))
+train_category <- train_rating %>%
+  mutate(quality = as.factor(quality))
+```
+
+## Correlation matrix of variables
+
+A correlation matrix is created to better understand how features and outcomes might be related to better understand the correlation matrix. The following shoes the correlation matrix and its plot (Figure 1).
+
+
+```{r correlation_matrix, echo=FALSE, fig.cap="Correlation Plot"}
+# Table of CorelationMatrix
+kable(cor(train_rating), booktabs = T, caption = "Correlation Matrix") %>%
+  kable_styling(latex_options = c("scale_down", "hold_position"))
+# Correlation Plot
+corrplot(cor(train_rating))
+```
+Grade outcome is most negatively impacted by the density and is strongly correlated with preservatives. The preservatives and density were also corelated with one another and this relation is not surprising. When preservatives are added to any food product, the density function is most certainly found to be affected, the density is a measure of sugar and preservatives in any beverage. Sugar has a higher density and most certainly rises the specific gravity of juice i.e., affects its density. Certain Preservatives are less denser than water and negatively affect the specific gravity i.e., it decreases the density. It is not surprising to find that all the parameters are correlated
+We do not eliminate any of the data set as it seems to be of a smaller size, elimination would me more practical if the dataset was extremely large so as to reduce computational power.
+
+## Data Visualization
+
+The dependent variable in this study is the grade values. Predictions are based on grade values of all the 11 observations. Lab analysis from the basis of this study. Each wine only has one entry and one grade rating. Each juice has a single entry and a singular grade rating and each row seen in the data set is for the juice.
+
+As the prediction is based on grade outcome. A histogram is shown for the grade ratings on the training dataset (Figure 2). The histogram shows a strong tendency for three of the data. High and low ratings are distinctly seen in the histogram.
+
+
+```{r rating_hist, echo=FALSE, fig.cap="Quality Rating Histogram"}
+# display a histogram of grade ratings
+train_rating %>% ggplot(aes(quality)) +
+  geom_histogram(bins = 7, col="red") + 
+  labs(title = "Grade Ratings") 
+  
+```
+
+### Linear Regression Relationship
+
+A relationship between grade variable and features are useful in modeling. The plots display a feature vs grade (Figure 3). Upon looking at the nature of the graph almost all the variables have a flat line.
+
+
+```{r rating_trend, echo=FALSE, fig.cap="Features Test Results"}
+# Reshaping of training data.
+wlong_rating <- train_rating  %>% mutate(obs = 1:n()) %>%
+  select(obs, everything())%>% 
+  pivot_longer(cols = fixed_acidity:alcohol,
+                         names_to = "test",
+                         values_to = "result")
+# Creation of Plots
+wlong_rating %>% ggplot(aes(quality, result)) +
+  geom_point() +
+  geom_smooth(method = "lm", ) +
+  facet_wrap(test ~ ., scales = "free")
+```
+
+To draw a conclusion, p-value is a factor that is calculated In order to see if there is any significance, the p value for each factor was calculated. A significantly high confidence interval of 95% will most certainly have a p-value below 0.05. The factors are shown below: 
+
+```{r significance, echo=FALSE}
+# Colum names excluding "grade"
+cn <- colnames(train_rating)[-12]
+# Function returns p-value for a data colum
+# upon implementing the function: lm(grade ~ col_name)
+# Using train_rating dataframe
+
+linear_fit <- function(col_name){
+  # Formulae input using test_name
+  fmla <- as.formula(paste("quality ~", col_name))
+  # Fir calculation using the linear model
+  fit <- lm(fmla, data = train_rating)
+  # p-value for the model
+  p_val <- summary(fit)$coefficients[,"Pr(>|t|)"][2]
+  # Rounding p-value
+  return(round(p_val,4))
+}
+# p-value calculation for the column  
+sa <- sapply(cn, linear_fit)
+# Colum names
+names(sa) <- cn
+# Displaying p-values
+sig <- sa < 0.05
+sa[sig]
+```
+
+All values are significant, some have linear correlation, and some don’t have the linear trend.
+
+```{r significance2, echo=FALSE}
+# Non-significant p-values
+sa[!sig]
+```
+
+### Boxplots of Features vs Quality
+
+Boxplots is another means of visualizing a relationship among all the grade values. For better visualization the date is grouped together in three categories as shown below: ws:
+
+-   Acceptable - quality ratings 3 and 4
+-   Good - quality ratings 5, 6, and 7
+-   Premium - quality ratings 8 and 9
+
+Reduction in categories allows in better visualization and better understanding of boxplots are shown in Figure 4.
+
+```{r box_plot_facet, fig.width=7, fig.height=7, fig.cap="Test Result vs Quality", echo=FALSE}
+# Narrow data frame creation
+# Addition of observations in the first column
+# reshape the data to facilitate plotting and data visualization
+
+wlong <- train_rating  %>% 
+  mutate(obs = 1:n()) %>%
+  mutate(quality = as.factor(ifelse(quality >=8, "premium",
+                                    ifelse(quality <= 4, 
+                                           "acceptable", "good") ))) %>%
+  select(obs, everything())%>% 
+  pivot_longer(cols = fixed_acidity:alcohol,
+                         names_to = "test",
+                         values_to = "result")
+# Display box plot facet_wrap
+wlong %>% ggplot(aes(result, quality)) +
+  geom_boxplot() +
+  facet_wrap(test ~ ., scales = "free")
+```
+
+### Plot for scattered matrix
+
+Comparison of features vs grade show an interesting result. The ok, great and best ratings are introduced. A boxplot split into two groups were done so as to give a better insight (Figure 5 and Figure 6). On looking at the plots, all plots nearly show the same pattern, the grade rating seem to cluster around the premium rating which are targeted at the center or within center. The acceptable rating could be outlier or lie within the great range, making the prediction slightly difficult and a model that works for concentric circles might be difficult 
+
+
+```{r scatterplot1, fig.cap="Features Pairwise Comparison 1", fig.height=7, fig.width=7, echo=FALSE}
+# set transparency in plots
+transparentTheme(trans = .4)
+# categories to three, acceptable, good, premium
+tw <- train_rating %>% 
+  mutate(quality = as.factor(
+    ifelse(quality >=8, "premium",
+           ifelse(quality <= 4, "acceptable", "good") )))
+# Plotting first few features
+featurePlot(x = tw[, 1:5], 
+            y = tw$quality, 
+            plot = "pairs",
+            ## Adding top key
+            auto.key = list(columns = 3))
+```
+
+```{r scatterplot2, fig.cap="Features Pairwise Comparison 2", fig.height=7, fig.width=7, echo=FALSE}
+# Plotting remaining features
+featurePlot(x = tw[, 6:11], 
+            y = tw$quality, 
+            plot = "pairs",
+            ## Key addition at the top
+            auto.key = list(columns = 3))
+```
+
+\pagebreak
+
+## Feature Standardization 
+
+Till this point, analysis has been conducted on the originally unstructured Raw data form. The dataset has varying measurements and scales. It can be concluded that standardized dataset is useful as centered and standardized data performed better in this model whereas few other models showed no impact with a few sets of test runs, concluding the usage of standardized data set going forward.
+
+For standardizing the data, a pre-processing function from the caret package will be used. Furthermore, for categorial and numerical analysis, a single set of features are to be used. The grade predictor, y\_cat (y\_num), will be separate for classification (categorical) and regression(numerical) models.
+
+
+```{r standardize}
+# Function caret
+# Subset feature creation
+# features <- train_rating[ , -12]
+y_num <- train_rating[ , 12]
+y_cat <- train_category[ , 12]
+y_test_num <- test_rating[ , 12]
+y_test_cat <- test_category[ , 12]
+# Pre-processing value
+# One pre-processing value needed for one set of features.
+
+preProcValues <- preProcess(train_rating[,-12], method = c("center", "scale"))
+# training set feature calculation
+train_feat <- predict(preProcValues, train_rating[ , -12])
+# Test set transformation using mean and standard deviation
+# stored in the pre-processing value data set
+
+test_feat <- predict(preProcValues, test_rating[ , -12])
+```
+
+As seen in the new transformed dataset, all the features have a mean value of zero and a standard deviation of one. As it can be expected, the mean and standard deviation vales are slightly different since the pre-processing value is made in the train dataset.
+
+```{r check_standardized, echo=FALSE}
+# Transformation check
+# Mean and standard deviation calculation
+mean_and_sd <- function(feature){
+  c_mu <- mean(feature) %>% round(3)
+  c_sd <- sd(feature) %>% round(3)
+  return (c(c_mu, c_sd))
+} 
+# Display values of mean and standard deviation
+cat("Mean and Standard Deviations for the training set:\n")
+sapply(train_feat, mean_and_sd)
+cat("\n\nMean and Standard Deviations for the test set:\n")
+# Check transformation of features
+# No other changes made
+
+sapply(test_feat, mean_and_sd)
+#sapply(test_category_xformed, mean_and_sd)
+# Remove all non-transformed data values
+
+rm(train_rating, test_rating, train_category, test_category)
+```
+
+## Decision Tree for better understanding and Data Mining
+
+Aim of this study is to find out the features that can be helpful for juice making/creation. Decision tree is one such tool used for better understanding and Data Mining.
+
+To meet our studies requirement, decision tree is the closest and best method, for data mining. Fast to construct and help is better introspection [@Hastie, Trevor, Robert Tibshirani, Jerome Friedman. 2017. The Elements of Statistical Learning: Data Mining, Inference, and Prediction. Second Edition. pg 352]
+First step is observing the decision tree for better understand and predicting the rating value of juice (Figure 7). The tree is based on standardizing data. The standardization process would be reversed if utilizing the figure for decision making.
+
+
+```{r decision_tree, fig.cap="Decision Tree for Numeric Ratings"}
+# Training and Test data set for standardizing feature
+train <- cbind(train_feat, y_num)
+test <- cbind(test_feat, y_test_num )
+# Training Rpart model  
+train_rpart2 <- train(quality ~ ., 
+                      method = "rpart", 
+                      tuneGrid = data.frame(cp = seq(0.0,0.1, len=25)),
+                      data = train)
+# RMSE check of the model  
+y_hat <- predict(train_rpart2, test)
+rmse_rpart_tuned <- RMSE(test$quality, y_hat)
+# Showcase RMSE result 
+cat("The RMSE for the model produced by the decision tree is", rmse_rpart_tuned )
+# Rpart model prediction 
+rpart.plot(train_rpart2$finalModel,
+           main = "Decision Tree\nStandardized Features",
+           type = 5,
+           yesno = 2,
+           cex = .7)
+```
+
+Decision tree can help us understand and assign values in the model. In a decision tree, there are quite a  few branches, with same features used on multiple branches like preservatives. There are unique features that appear on the decision tree..
+
+```{r dt_features, echo=FALSE}
+# Tree term through the model
+ind <- !(train_rpart2$finalModel$frame$var == "<leaf>")
+tree_terms <-
+  train_rpart2$finalModel$frame$var[ind] %>%
+  unique() %>%
+  as.character()
+# Showcase Decision Tree terms
+tree_terms
+```
+
+Rpart model help produce variable important matrix, it can help provide an overall measure [^6]. A few parameters have high importance and a few don’t, ones who have high importance are chlorides and citric acid. Variable importance is shown as follows:-
+
+
+[^6]: Therneau, Terry, Elizabeth Atkinson. 2019. An Introduction to Recursive Partitioning Using the RPART Routines. p12. <https://cran.r-project.org/web/packages/rpart/vignettes/longintro.pdf>
+
+
+```{r varimp}
+# Importance variable
+vi <- varImp(train_rpart2)$importance %>% arrange(desc(Overall))
+# Saving variable importance for future calculation
+vi_table <- as_tibble_col(rownames(vi)[1:4], column_name = "rating")
+# Displaying the obtained variable importance
+vi
+```
+
+### Decision Tree for the Best category
+
+Next step is to look at the other categories, the best and the others (Figure 8). If a juice creator wants to be the best, he needs to have the best grade of juice with him. When focusing on the best category, the tree needs to be be very very different. Where the focus is to correctly pic the best grade around all the spectrum
+
+
+```{r premium_decision_tree, fig.cap="Decision Tree for Premium Category"}
+# Set up category for the best or others
+y_prem <- y_num %>% mutate(quality = ifelse(quality < 7, "other", "premium"))
+# Training set creation
+train <- cbind(train_feat, y_prem)
+# Train the category model
+train_rpart2 <- train(quality ~ ., 
+                      method = "rpart", 
+                      tuneGrid = data.frame(cp = seq(0.0,0.1, len=25)),
+                      data = train)
+# Reduce the number of branchess
+pruned <- prune(train_rpart2$finalModel, cp = 0.01)
+# Plotting the tree
+rpart.plot(pruned,
+           main = "Decision Tree - Premium Category\nStandardized Features",
+           type = 5,
+           yesno = 2,
+           cex = .7)
+```
+
+The Decision tree if different from the previously shown decision tree. I needs to reduce the branches i.e., it need to be pruned. With the change in the tree, features utilization greatly increased form the previous 7 to the new 11. The variable importance shows significant shifts.
+
+```{r premium_dt_varimp}
+# Return the three terms
+ind <- !(train_rpart2$finalModel$frame$var == "<leaf>")
+tree_terms <-
+  train_rpart2$finalModel$frame$var[ind] %>%
+  unique() %>%
+  as.character()
+# Showcase tree terms
+tree_terms
+# Importance Variable
+vi <- varImp(train_rpart2)$importance %>% arrange(desc(Overall))
+# Saving variable importance for future calculation
+vi_table <- add_column(vi_table, premium = rownames(vi)[1:4])
+# Display variable importance
+vi
+```
+
+## Analysis (Principal Component)
+
+Another analysis used to understand the feature is the Principal Component Analysis (PCA). The impact of grade rating isn’t included in the analysis as we are trying to find relationships. The two plots about PCA are shown below. PCA is a data analysis method which assists in visualization and better understanding of dataset values."[^7]
+
+[^7]: Kassambra, Alboukadel. 2017. PCA in R Using FactoMineR: Quick Scripts and Videos. <http://www.sthda.com/english/articles/22-principal-component-methods-videos/65-pca-in-r-using-factominer-quick-scripts-and-videos/>
+
+Figure 9 displays such a visualization chart using the above stated PCA. Features that point a single direction are positively correlated (sugar, acid, density) and the ones pointing in the other direction are negatively correlated (pH value). The color code showcases the two dimensions. Another PCA analysis, Figure 10 displays correlation plot of five dimensions in PCA. The color and size of the dot represent the contribution of dimension shown in the right side of the plot. The graphs help us understand keep variables like sugar, preservatives, density, pH, acidity. Numerical result of the PCA analysis is shown below.
+
+
+```{r PCA, fig.cap="PCA Variables Plot", echo=FALSE}
+# Perform the pca analysis using the FactoMineR library
+res.pca <- PCA(train_feat, graph = FALSE)
+# Plot the variable contributions for dimensions 1 and 2
+fviz_pca_var(res.pca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"))
+```
+
+```{r corrplot, fig.cap="Correlation Plot", echo=FALSE}
+# PCA result for variables
+var <- get_pca_var(res.pca)
+# Correlation Plot
+corrplot(var$cos2, is.corr=FALSE)
+ 
+# Calculation for first dimension
+vc <- as_tibble(var$contrib)%>% 
+  select(Dim.1)
+# Rowname for var$contrib matrix on the tibble 
+vc$feature <- rownames(var$contrib)
+# Sort descending value and move feature for first column
+vc <- relocate(vc, feature, .before = Dim.1) %>% 
+  arrange(desc(Dim.1))
+# Variable display for dimension one
+vc
+```
+
+## PCA based scatterplot matrix
+
+On PCA analysis, the important feature preservatives, acidity, density, sugar, pH. Figure 11 shows the scatter plot, in the standardized format. The pattern is still existent with the display of a bulls eye.
+
+
+```{r PCA_factors, fig.cap="Important Features from PCA", echo=FALSE}
+# Important feature are stored in tw object
+# Grade ratings into acceptable, good, premium
+tw <- train_feat %>% select(fixed_acidity, density, pH, 
+                                     alcohol, residual_sugar, 
+                                     total_sulfur_dioxide) %>% 
+  cbind(y_num) %>%
+  mutate(quality = as.factor(
+    ifelse(quality >=8, "premium",
+           ifelse(quality <= 4, "acceptable", "good") )))
+  
+# Creating feature plot
+featurePlot(x = tw[, 1:6 ], 
+            y = tw$quality, 
+            plot = "pairs",
+            ## Add a key at the top
+            auto.key = list(columns = 3))
+```
+
+## Analysis result
+
+Three unsupervised model provide commonality of variable importance, solutions contain variability. As seen in Table, preservatives and density top variables in three models. Chlorides is the most important variable. Most important variable could be suger, dioxide in the order. Citirc acid is present in a single model.
+
+Preservatives, density and sugar are factors that are correlated. Increase in preservatives content is key, with some variability not showing high levels of accuracy. Variations exist and there could be two causes. First being missing components or the features are correlated with wrong factors. Example preservatives, density and sugar are highly correlated, there could be even better predictors which are not in the database and hence are unrelated. 
+
+
+```{r pca_variable_importance}
+# Importance Variable
+# Variable importance for future comparison and unsupervised models
+vi_table <- add_column(vi_table, PCA = vc$feature[1:4])
+# Displaying importance Table
+kable(vi_table, caption = "Variable Importance", booktabs=T)%>% 
+  kable_styling(latex_options = "hold_position")
+```
+
+# Modeling
+
+Numerical outcomes and categorical outcome, both can be used to conduct modelling. 
+Modeling was conducted for both numeric and categorical outcomes. The modeling is performed by utilizing the caret function package. As can be seen from the code shown in this section, a "group\_train" function was employed which allowed for the testing of multiple models in one run. Many more models were tested than the ones included in this report. Only a few example model outcomes are included as part of this report.
+
+## Regression Models
+
+It provides prediction of results in a numerical manner. Evaluation of multiple models will help us determines which model works best. As it is regression, model that minimizes RMSE is utilized.
+
+Summary of regression runs are shown in Table. It is not at all shocking to see the linear models did not perform well. Random forest model produced the lowest RMSE.
+
+
+```{r regression_models, cache=TRUE}
+# Creating train and test from features
+train <- train_feat %>% cbind(y_num)
+test <- test_feat %>% cbind(y_test_num)
+# ML model list to evaluate
+models <- c("glm", "svmLinear", "gamboost","gamLoess", "knn", 
+            "kknn", "gam","ranger", "rf", "Rborist", "mlp", 
+            "svmRadial", "svmRadialCost", "svmRadialSigma")
+#Function to visualize function
+#Runs training model list
+
+group_train <- function(model_list, seed = 831){
+  # using override user or set seed model
+  set.seed(seed, sample.kind = "Rounding")
+  # Model length
+  l <- length(model_list)
+  # initialize the train_list after traiing first model
+  train_result <- train(quality ~ ., method = model_list[1], data = train)
+  train_list <- list(train_result)
+  # remaining models training
+  for (i in 2:l){
+    train_result <- train(quality ~ ., method = model_list[i], data = train)
+    train_list[[i]] <- train_result
+  }
+  # Model Namet
+  names(train_list) <- model_list
+  # List of training model
+  return(train_list)
+}
+# Models train
+model_list <- group_train(models)
+# Prediction matrix creation using ML Model
+p <- sapply(model_list,predict, test)
+# RMSE model calculation 
+a <- apply(p, 2, RMSE, test$quality) %>% enframe(name="Model", value = "RMSE")
+# RMSE table displaying 
+kable(a, caption = "Regression Models", booktabs=T)%>% 
+  kable_styling(latex_options = "hold_position")
+```
+
+\newpage
+
+### Random Rborist
+
+Good results for best Rborist regression models. Tuning the Rborist model is important to get result
+
+
+```{r random_forest, echo=TRUE, cache=TRUE}
+# Test and train for numeric evaluation
+train <- train_feat %>% cbind(y_num)
+test <- test_feat %>% cbind(y_test_num)
+# Model tuning grid
+train_rborist <- train(quality ~ .,
+             method = "Rborist",
+             tuneGrid = data.frame(predFixed = 2,
+                                   minNode = c(3, 50)),
+             data = train)
+# Value for the test set
+y_hat <- predict(train_rborist, test)
+# Calculate the model RMSE
+rmse_rborist <- RMSE(test$quality, y_hat)
+# Display the results
+cat("The RMSE for the tuned Rborist model is", rmse_rborist)
+```
+
+RMSE for the base caret model and tuned model are the same. Tuning parameter in caret package performed well.
+
+## Classification Models
+
+Predictions such as categorical predictions are provided by the classification model. Multiple models are evaluated to determine which model performs well. As there is a classification model approach, we look to maximize accuracy. Accuracy simply means proportion of true correct value, the accuracy in R programming is calculated using this model.
+
+Converting grade rating factors into numbers and accessing them can be done with RMSE. Not an interest to optimize models but to calculate RMSE using regression models analysis. 
+
+
+```{r classification_models, cache=TRUE}
+# Resetting train and test set
+train <- train_feat %>% cbind(y_cat)
+test <- test_feat %>% cbind(y_test_cat)
+# ML model creation
+models <- c("knn", "kknn", "Rborist", "ranger", "mlp","svmRadial")
+# Evaluating each function in the supply list
+# Returning list of test model
+group_train <- function(model_list, seed = 831){
+  # Model run and set seed model
+  set.seed(seed, sample.kind = "Rounding")
+  # length of list
+  l <- length(model_list)
+  # initialize train_list after input
+  train_result <- train(quality ~ ., method = model_list[1], data = train)
+  train_list <- list(train_result)
+  # Remaining model training
+  for (i in 2:l){
+    train_result <- train(quality ~ ., method = model_list[i], data = train)
+    train_list[[i]] <- train_result
+  }
+  # Naming model in list
+  names(train_list) <- model_list
+  # List of training model
+  return(train_list)
+}
+ # Model train
+model_list <- group_train(models)
+# RMSE calculation
+RMSE2 <- function(predicted_ratings, true_ratings){
+  # Addition of value for rating correction
+  tr <- as.numeric(true_ratings) +2
+  pr <- as.numeric(predicted_ratings)
+  sqrt(mean((tr - pr)^2))
+}
+# ML Model column prediction matrix
+p <- sapply(model_list, predict, test)
+# RMSE for each model
+a <- apply(p, 2, RMSE2, test$quality) %>% enframe(name="Model", value = "RMSE")
+kable(a, caption = "Classification Models", booktabs=T) %>% 
+  kable_styling(latex_options = "hold_position")
+# Hold accurate result
+accuracy_df <- tibble(Model = character(),
+                      Accuracy = numeric())
+# Display accuracy for all model run
+for(i in 1:ncol(p)){
+  y_hat <- factor(p[,i], levels(test$quality))
+  cm <- confusionMatrix(y_hat, test$quality)
+  accuracy_df[i,1] <- models[i]
+  accuracy_df[i,2] <- cm$overall["Accuracy"]
+}
+kable(accuracy_df, caption = "Classification Model Accuracy", booktabs=T )%>% 
+  kable_styling(latex_options = "hold_position")
+# "ranger", a prediction for best model
+y_hat <- factor(p[,"ranger"], levels(test$quality))
+# Specificity and sensitivity print out
+cm <- confusionMatrix(y_hat, test$quality)
+cm$overall["Accuracy"]
+# cm$byClass[,1:2]
+# broom function to get the confusion matrix output in tidy format
+tcm <- tidy(cm)
+# drop rows to create a wide version
+tcm <- tcm[3:nrow(tcm),] %>% 
+  select(term, class, estimate) %>%
+  pivot_wider(names_from = term, values_from = estimate) %>%
+  select(class, sensitivity, specificity, prevalence, detection_rate)
+# Dsiplay prediction
+tcm
+# save Prediction
+y_hat_ranger <- y_hat 
+```
+
+Good Result for accuracy and RSME is produced by Ranger. The results are shown above. Because of the issue of prevalence, sensitivity of predicting best and great ratings are low. The mode error is also a little high.
+
+It is well understood to avoid any low rating target and to select the best of the lot. If its possible to improve sensitivity, it will improve the model as a whole. Knn model below could be a good substitute.
+
+
+```{r knn_cm, cache=TRUE}
+# knn model predictor
+y_hat <- factor(p[,1], levels(test$quality))
+# sensitivity and specialty
+cm <- confusionMatrix(y_hat, test$quality)
+cm$overall["Accuracy"]
+#cm$byClass[,1:2]
+#broom function to get the confusion matrix.
+
+tcm2 <- tidy(cm)
+# Create a broader version by dropping two rows
+tcm2 <- tcm2[3:nrow(tcm2),] %>% 
+  select(term, class, estimate) %>%
+  pivot_wider(names_from = term, values_from = estimate) %>%
+  select(class, sensitivity, specificity, prevalence, detection_rate)
+# Showcase result
+tcm2
+```
+
+## Compensate for Prevalence
+
+Leveling helps remove prevalence in the category. Leveling will create a dataset of observations. Process will start with base observations and sample replacement, similar to bootstrapping. This approach is new and can help compensate earlier models and can be extended to handle multiple outcomes as correctly reflected in the data set.
+
+By utilizing the leveled dataset, the leveling process can improve sensitivity and can help make good predictions.[^8]
+
+[^8]: Irizzary, Rafael, 2019. Introduction to Data Science.\<[[[https:/com/datascom/datasciencebook\\\\](https:/com/datascom/datasciencebook){.uri}](%5Bhttps:/com/datascom/datasciencebook%5D(https:/com/datascom/datasciencebook)%7B.uri%7D){.uri}\>](<https:/>
+
+
+\`pub.va/leanpub.com/d
+
+```{r prevalence_dataset, fig.cap="Leveled Quality Ratings"}
+## Clear test and train set
+train <- train_feat %>% cbind(y_cat)
+test <- test_feat %>% cbind(y_test_cat)
+# No of observations of ratings
+obs_by_category <- train %>% group_by(quality) %>% summarize(obs = n())
+# Leveled dataset
+train_level_prev <- train
+for(i in 1:7){
+  obs <- obs_by_category[i,2] %>% .$obs
+  qlty <- obs_by_category[i, 1] %>% .$quality
+  sample_obs <- train %>% filter(quality == qlty)
+  ind <- sample(1:nrow(sample_obs), 2000 - obs, replace = TRUE)
+  new_obs <- sample_obs[ind,]
+  train_level_prev <- rbind(train_level_prev, new_obs)
+}
+```
+
+## Leveled Models
+
+Subsection repets the model run utilizing leveled function, with reduced number of runs. Table summarizes the RMSE results.
+This section repeats the multiple model run from above, but this time using the leveled features. For efficiency purposes, the number of models was also reduced. Table 6 summarizes the Accuracy results and Table 7 summarizes the RMSE results.
+
+
+```{r leveled_models, cache=TRUE}
+# Training set for the leveled model run 
+train <- train_level_prev
+# Remove redundant object
+rm(train_level_prev)
+# Test set for modelling as categories 
+# train <- train_feat %>% cbind(y_cat)
+
+test <- test_feat %>% cbind(y_test_cat)
+# ML evaluation
+models <- c("knn", "kknn", "ranger", "rf", "Rborist", "mlp")
+# Evaluate each function
+# A list of trained models
+
+group_train <- function(model_list, seed = 831){
+  # use user override function
+  set.seed(seed, sample.kind = "Rounding")
+  # Getting length
+  l <- length(model_list)
+  # train the model train_list
+  train_result <- train(quality ~ ., method = model_list[1], data = train)
+  train_list <- list(train_result)
+    # Train remaining 
+  for (i in 2:l){
+    # print(model_list[i])
+    train_result <- train(quality ~ ., method = model_list[i], data = train)
+    train_list[[i]] <- train_result
+  }
+  ## Name model in list
+  names(train_list) <- model_list
+  # Return list of models
+  return(train_list)
+}
+# train_models
+model_list <- group_train(models)
+# column for each ML Model
+# caret predict function
+
+p <- sapply(model_list, predict, test)
+# ranger model results
+y_hat <- factor(p[,"ranger"], levels(test$quality))
+# display the confusion matrix
+cm <- confusionMatrix(y_hat, test$quality)
+cm$overall["Accuracy"]
+# broom function for the confusion matrix output 
+tcm_r <- tidy(cm)
+# drop rows and create a broad version
+tcm_r <- tcm_r[3:nrow(tcm_r),] %>% 
+  select(term, class, estimate) %>%
+  pivot_wider(names_from = term, values_from = estimate) %>%
+  select(class, sensitivity, specificity, prevalence, detection_rate)
+# Result display
+cat("\n\n\nThe confusion matrix results for the ranger model after leveling are:\n")
+tcm_r
+# Data frame creation
+accuracy_df <- tibble(Model = character(),
+                      Accuracy = numeric())
+# Accuracy printing of modelun
+for(i in 1:ncol(p)){
+  y_hat <- factor(p[,i], levels(test$quality))
+  cm <- confusionMatrix(y_hat, test$quality)
+  accuracy_df[i,1] <- models[i]
+  accuracy_df[i,2] <- cm$overall["Accuracy"]
+}
+kable(accuracy_df, caption = "Leveled Model Accuracy", booktabs=T )%>% 
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r, leveled_results, cache=TRUE}
+# Create RMSE values 
+RMSE2 <- function(predicted_ratings, true_ratings){
+  #the min factor is 3, so add 2 to the conversion to get the rating correct
+  tr <- as.numeric(true_ratings) +2
+  pr <- as.numeric(predicted_ratings)
+  sqrt(mean((tr - pr)^2))
+}
+# RMSE calculation
+a <- apply(p, 2, RMSE2, test$quality) %>% enframe(name="Model", value = "RMSE")
+# Display RMSE results
+kable(a, caption = "Leveled Model RMSE", booktabs=T)%>% 
+  kable_styling(latex_options = "hold_position")
+```
+
+The accuracy decreases in the model, decrease from the original value. As Ranger has the best result, lets look at the specialty and sensitivity model. Knn model has a good sensitivity.
+
+```{r knn changes}
+# Pre-leveled result
+cat("The confusion matrix results for the knn model prior to leveling were:\n")
+tcm2
+# knn model prediction
+y_hat <- factor(p[,1], levels(test$quality))
+# display confusion matrix
+cm <- confusionMatrix(y_hat, test$quality)
+cm$overall["Accuracy"]
+# broom function to get confusion matrix
+tcm <- tidy(cm)
+# Create braod function
+tcm <- tcm[3:nrow(tcm),] %>% 
+  select(term, class, estimate) %>%
+  pivot_wider(names_from = term, values_from = estimate) %>%
+  select(class, sensitivity, specificity, prevalence, detection_rate)
+# Result display
+cat("\n\n\nThe confusion matrix results for the knn model after leveling are:\n")
+tcm
+```
+
+As shown above, the sensitivity when predicting category 8 increased from 0.0541 in the original model to 0.541 in the leveled model. Although the overall model accuracy is lacking, this increase in sensitivity while still maintaining very good specificity, could be useful in some applications such as wine purchasing.
+
+
+# Result Summary
+
+### Unsupervised Models
+
+Unsupervised models were explored, a decision tree made, Three models with similarities and accuracy measured either RMSE, the categories were stated and accuracy, sensitivity and fraction explained. Correlation of models were made, as and where possible keeping in mind all the columns in the data set and correlation among them
+### Supervised models
+
+Models were tested using caret package Best prediction for category and accuracy. No result is bad or precise.
+
+Errors in the Rborist model primarily existed in the high and low grade ratings. It was suspected that prevalence might be impacting the results because of the low prevalence of both high and low grade ratings.
+
+Leveling was introduced to test the impact of prevalence. Leveling had a significant impact on the knn model, but had no impact on the random forest models. The random forest models still performed significantly better than any other family of models. It appears that there is not a clear signal present in the features contained in the dataset to accurately predict highly and poorly rated wines.
+
+A look at the confusion matrix when predicting categories showed that although the accuracy was poor, the specificity of the predictions was actually very good and nearly 100% accurate. The sensitivity was poor only picking up a small percentage of the premium grade ratings.
+
+# Conclusions
+
+Several conclusions can be drawn from these results.
+
+1.  The data set contains a very limited set of features.
+
+    -   These products are based on physicochemical characteristics of the finished wine. Volatile compounds, such as esters, thiols, fatty acids, etc., were not measured and are key aroma components in finished wine.
+
+    -   Features associated with the wine making ingredients and process were not included in the dataset. These features might provide much more insight for the unsupervised models and increase the accuracy of the supervised models.
+
+    -   Grade ratings were expressed as a single final statistic. Typically these ratings have a number of subcategories and are complied by multiple individual tasters. Access to the grade scoring process data might be very useful
+
+2.  Accuracy and RMSE of models could be better
+
+    -   The results are marginally useable. They do not predict high and low grade ratings well, and that is what would be most useful.
+
+    -   Specificity is good, which would make the models useful for wine purchasing if the ratings were still unknown.
+
+    -   Wether the models could be useful for blending or wine making would need further testing.
+
+3.  Leveling did not improve the accuracy of the models but did improve the sensitivity of the knn model for predicting the premium category. If this were being used by a wine buyer, the increased sensitivity might be valuable.
+
+Overall, the models produced have some limited usefulness. I suspect that expanding the features available in the data set, as described above, would produce improved results.
+
+# Further Study
+
+The primary area for increased study would be to broaden the features data set and include key features that address the volatile aroma components, the wine making process, and the grade scoring process.
+
+In addition, it would be interesting to see if establishing blending targets using the models could be leveraged to improve grade scores. This might be very useful to winemakers.
+
+Extensibility would be another area of interest. This dataset was for juice vihno verde produced in Northern Portugal. I suspect that the characteristics for red wines from the same region would be quite different. Also, I would suspect that region and grape varieties have a major impact on the model. Studying the impact and variability over a variety of regions, grapes, and wine styles might lead to some interesting insights.
+
+# References
+
+Australian Academy of Science. 2017. The chemistry of wine: Part 1. <https://www.science.org.au/curious/earth-environment/chemistry-wine-part-1>
+
+P. Cortez, A. Cerdeira, F. Almeida, T. Matos and J. Reis. Modeling wine preferences by data mining from physicochemical properties. In Decision Support Systems, Elsevier, 47(4):547-553, 2009. <https://archive.ics.uci.edu/ml/datasets/Wine+Grade>
+
+Hastie, Trevor, Robert Tibshirani, Jerome Friedman. 2017. *The Elements of Statistical Learning: Data Mining, Inference, and Prediction*. Second Edition
+
+Irizzary, Rafael, 2019. Introduction to Data Science. <https://leanpub.com/datasciencebook>
+
+Kassambra, Alboukadel. 2017. PCA in R Using FactoMineR: Quick Scripts and Videos. <http://www.sthda.com/english/articles/22-principal-component-methods-videos/65-pca-in-r-using-factominer-quick-scripts-and-videos/>
+
+Kuhn, Max. 2019. The caret Package. <https://topepo.github.io/caret/>
+
+Lê, S., Josse, J. & Husson, F. (2008). FactoMineR: An R Package for Multivariate Analysis. Journal of Statistical Software. 25(1). pp. 1-18.
+
+Therneau, Terry, Elizabeth Atkinson. 2019. An Introduction to Recursive Partitioning Using the RPART Routines. <https://cran.r-project.org/web/packages/rpart/vignettes/longintro.pdf>
+
+Wansbrough, Heather, Robert Sherlock, Maurice Barnes, Malcolm Reeves. 2017. Chemistry in Winemaking. pg 5. <https://nzic.org.nz/app/uploads/2017/10/6B.pdf>
